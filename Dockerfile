@@ -6,7 +6,7 @@ RUN apt-get update -yqq && \
 	autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev \
         zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev git libgdbm6 libreadline-dev \
 	nginx nodejs dirmngr gnupg apt-transport-https ca-certificates npm imagemagick \
-        postgresql postgresql-contrib libpq-dev libsqlite3-dev cron && \
+        postgresql postgresql-contrib libpq-dev libsqlite3-dev pkg-config cron && \
 	npm install --global yarn && \
         gem update --system && \
         gem update strscan --default && \
