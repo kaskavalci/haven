@@ -36,4 +36,4 @@ jobs:
           context: .
           platforms: linux/amd64, linux/arm64
           push: ${{ github.ref == 'refs/heads/master' }}
-          tags: ghcr.io/havenweb/haven:${{ steps.get_tag.outputs.tagname }}, ghcr.io/havenweb/haven:latest
+          tags: ghcr.io/${{ github.repository }}:${{ steps.get_tag.outputs.tagname }}, ghcr.io/${{ github.repository }}:latest
