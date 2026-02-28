@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '3.3.7'
+ruby '>= 3.3.7'
 
 # For configuration files
 gem 'dotenv-rails', '2.7.6'
@@ -31,9 +31,9 @@ gem 'kaminari', '~> 1.2.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 7.1.5.2'
-# Use sqlite3 as the database for Active Record
-#gem 'sqlite3'
-gem 'pg', '~> 1.5.9'
+# Database adapters (install one or both; exclude the other with bundle config)
+gem 'pg', '~> 1.5.9', group: :postgresql
+gem 'sqlite3', '~> 1.7', group: :sqlite
 # Use Puma as the app server
 gem 'puma', '~> 5.6.9'
 # Use SCSS for stylesheets

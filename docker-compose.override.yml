@@ -1,0 +1,9 @@
+# SQLite override: removes PostgreSQL dependency and uses an embedded SQLite database.
+# Docker Compose auto-merges this file on top of docker-compose.yml.
+# To revert to PostgreSQL, rename or delete this file.
+services:
+  haven:
+    image: ghcr.io/kaskavalci/haven:latest
+    depends_on: []
+    environment:
+      - DATABASE_URL=sqlite3:storage/haven_production.sqlite3
