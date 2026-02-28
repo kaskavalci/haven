@@ -1,6 +1,9 @@
 class ImagesController < ApplicationController
   include ActiveStorage::SetCurrent
-  before_action :verify_auth!, :set_blob
+  include ImageHelpers
+
+  before_action :verify_auth!, :set_blob, only: [:show, :show_variant]
+  before_action :authenticate_user!, only: [:upload]
   protect_from_forgery with: :exception
 
   def show
@@ -12,6 +15,25 @@ class ImagesController < ApplicationController
     expires_in ActiveStorage.service_urls_expire_in
     variant = @blob.variant(thumbnail: "1600", quality: '65%', interlace: 'plane', auto_orient: true).processed
     redirect_to variant.url(disposition: params[:disposition]), allow_other_host: true
+  end
+
+  def upload
+    if params[:file].nil?
+      render json: { error: "No file provided" }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      image = create_haven_image(params[:file])
+      render json: {
+        tag: media_tag_for(image).strip,
+        type: media_type_for(image),
+        id: image.id,
+      }, status: :created
+    rescue => e
+      Rails.logger.error "Upload failed: #{e.message}"
+      render json: { error: "Upload failed: #{e.message}" }, status: :unprocessable_entity
+    end
   end
 
   private

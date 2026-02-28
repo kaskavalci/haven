@@ -30,9 +30,16 @@
             class: 'nowrap' %> |
           <%= link_to 'Reset Password', reset_user_password_path(user),
             method: :post, class: 'nowrap' %> |
+          <% post_count = user.posts.count %>
+          <% comment_count = user.comments.count %>
+          <% if post_count > 0 || comment_count > 0 %>
+            <% warning = "WARNING: #{user.name} (#{user.email}) has #{post_count} post#{'s' unless post_count == 1} and #{comment_count} comment#{'s' unless comment_count == 1}. Deleting this user will PERMANENTLY destroy all of them. Consider reassigning their content first. Are you sure?" %>
+          <% else %>
+            <% warning = "Are you sure you want to delete #{user.name} (#{user.email})?" %>
+          <% end %>
           <%= link_to 'Delete', user_path(user),
             method: :delete, class: 'nowrap',
-            data: { confirm: "Are you sure you want to delete #{user.name} with email: #{user.email}?  This will also delete any posts or comments they have made." } %>
+            data: { confirm: warning } %>
         <% end %>
       </td>
     </tr>

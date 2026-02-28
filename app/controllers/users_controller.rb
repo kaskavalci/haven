@@ -55,8 +55,15 @@ class UsersController < ApplicationController
 
   def destroy
     @user = User.find(params[:id])
+    post_count = @user.posts.count
+
+    if post_count > 0
+      redirect_to users_path, alert: "Cannot delete #{@user.name}: they have #{post_count} post#{'s' unless post_count == 1}. Reassign their posts to another user before deleting."
+      return
+    end
+
     @user.destroy
-    redirect_to users_path
+    redirect_to users_path, notice: "User #{@user.email} deleted."
   end
 
 

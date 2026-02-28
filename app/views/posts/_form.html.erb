@@ -2,9 +2,26 @@
 <%= form_with model: @post, local: true do |form| %>
   <%= form.date_field :date, :style => 'display:inline;', :value => @post.datetime.strftime("%Y-%m-%d"), type: (@show_date ? :date : :hidden) %>
   <%= form.time_field :time, :style => 'display:inline;', :value => @post.datetime.strftime("%H:%M"), type: (@show_date ? :time : :hidden) %>
-  <%= form.text_area :content, :rows => 10, :dir => "auto", :style => 'display:block;width:100%;', :oninput => "doRender()", :value => @post.content %>
+
+  <div id="drop-zone" class="drop-zone">
+    <%= form.text_area :content, :rows => 10, :dir => "auto", :style => 'display:block;width:100%;', :oninput => "doRender()", :value => @post.content %>
+    <div class="drop-zone-hint">Drop images here</div>
+  </div>
+
   <%= form.file_field :pic, :accept => "image/*,.mp4,.mov,.hevc,.mp3", :style => "display:inline;" %>
   <%= form.submit :value => "Upload Selected Image", data: {disable_with: "Upload Selected Image"}, :style => "display:inline;" %>
+
+  <div class="upload-controls">
+    <input type="file" id="upload-file-input" accept="image/*,.mp4,.mov,.hevc,.mp3" multiple style="display:none;">
+    <button type="button" id="upload-btn" class="upload-btn">
+      &#128247; Add Photo
+    </button>
+    <span id="upload-indicator" class="upload-indicator" style="display:none;">
+      <span class="spinner"></span> Uploading&hellip;
+    </span>
+    <progress id="upload-progress" max="100" value="0" style="display:none;" class="upload-progress"></progress>
+  </div>
+
   <%= form.submit :value => "Save Post", :style => "display:block;" %>
 <% end %>
 

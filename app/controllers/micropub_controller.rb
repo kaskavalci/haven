@@ -1,4 +1,5 @@
 class MicropubController < ApplicationController
+  include ImageHelpers
 
   skip_before_action :verify_authenticity_token
   before_action :set_auth_token
@@ -14,7 +15,12 @@ class MicropubController < ApplicationController
           {
             "type": "note",
             "name": "Post",
-            "properties": [ "content", "published" ]
+            "properties": ["content", "published"]
+          },
+          {
+            "type": "photo",
+            "name": "Photo",
+            "properties": ["content", "photo", "published"]
           },
         ]
       }, status: 200
@@ -125,12 +131,10 @@ class MicropubController < ApplicationController
         "Request to media endpoint requires a object named 'file'",
         400, request_json: params)
     end
-    image = Image.new
-    image.blob.attach params[:file]
-    image.save
-    location = request.base_url + "/images/raw/#{image.id}/#{image.blob.filename.to_s}"
+    image = create_haven_image(params[:file])
+    location = request.base_url + haven_image_path(image)
     response.set_header("Location", location)
-    head 201 #created
+    head 201
   end
 
   private
@@ -156,30 +160,75 @@ class MicropubController < ApplicationController
     return post
   end
 
-  # supported params: name, content, published
   def post_from_params(params)
-    unless params[:h] and params[:h]=="entry"
-      raise JsonError.new("invalid_request","Only h-entry types supported by this server",400)
+    unless params[:h] and params[:h] == "entry"
+      raise JsonError.new("invalid_request", "Only h-entry types supported by this server", 400)
     end
+
+    has_content = params[:content].present?
+    has_name = params[:name].present?
+    has_photo = params[:photo].present?
+
+    unless has_content || has_name || has_photo
+      raise JsonError.new("invalid_request", "New h-entry must have content, a name, or a photo", 400)
+    end
+
     content = ""
-    if params[:content]
-      content = params[:content]
-      if params[:name]
-        content = "# #{params[:name]}\n\n#{content}"
+    content = "# #{params[:name]}\n\n" if has_name
+    content += params[:content].to_s if has_content
+
+    if has_photo
+      photos = Array.wrap(params[:photo])
+      photos.each do |photo|
+        image = resolve_photo(photo)
+        content += media_tag_for(image) if image
       end
-    elsif params[:name]
-      content = "# #{params[:name]}"
-    else
-      raise JsonError.new("invalid_request","New h-entry must have content or a name (or both)",400)
     end
-    datetime = DateTime.now
-    if params[:published]
-      datetime = DateTime.parse(params[:published])
-    end
+
+    datetime = params[:published].present? ? DateTime.parse(params[:published]) : DateTime.now
+
     post = Post.new
     post.datetime = datetime
     post.content = content
-    return post  
+    post
+  end
+
+  def resolve_photo(photo)
+    if photo.is_a?(ActionDispatch::Http::UploadedFile)
+      create_haven_image(photo)
+    elsif photo.is_a?(String) && photo.match?(%r{/images/raw/(\d+)/})
+      image_id = photo.match(%r{/images/raw/(\d+)/})[1]
+      Image.find_by(id: image_id)
+    elsif photo.is_a?(String) && photo.start_with?("http")
+      attach_from_url(photo)
+    end
+  end
+
+  def attach_from_url(url)
+    require "open-uri"
+    require "tempfile"
+
+    uri = URI.parse(url)
+    filename = File.basename(uri.path)
+    ext = File.extname(filename).downcase
+
+    tempfile = Tempfile.new(["micropub", ext])
+    tempfile.binmode
+    URI.open(url, "rb") { |remote| IO.copy_stream(remote, tempfile) }
+    tempfile.rewind
+
+    content_type = case ext
+    when ".jpg", ".jpeg" then "image/jpeg"
+    when ".png" then "image/png"
+    when ".gif" then "image/gif"
+    when ".webp" then "image/webp"
+    else "application/octet-stream"
+    end
+
+    create_haven_image(io: tempfile, filename: filename, content_type: content_type)
+  rescue => e
+    Rails.logger.error "Failed to download photo from #{url}: #{e.message}"
+    nil
   end
 
   def post_to_mf2(post)
