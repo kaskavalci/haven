@@ -14,6 +14,7 @@ cron
 
 set +e
 PIDFILE=/tmp/pids/server.pid
+mkdir -p /tmp/pids
 if test -f "$PIDFILE"; then
   echo "Found PID file at $PIDFILE"
   PID=$(cat $PIDFILE)

@@ -82,6 +82,9 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
+  # We intentionally support SQLite in production for low-footprint deployments.
+  config.active_record.sqlite3_production_warning = false
+
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com

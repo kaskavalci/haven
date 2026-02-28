@@ -7,3 +7,4 @@ services:
     depends_on: []
     environment:
       - DATABASE_URL=sqlite3:storage/haven_production.sqlite3
+      - PIDFILE=/tmp/pids/server.pid
