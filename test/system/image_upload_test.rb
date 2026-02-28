@@ -10,8 +10,7 @@ class ImageUploadTest < ApplicationSystemTestCase
 
     fill_in "post_content", with: "This is a test post with an image."
 
-    attach_file('post_pic', Rails.root.join('test', 'fixtures', 'files', 'test_image.png'))
-    click_on "Upload Selected Image"
+    attach_file("upload-file-input", Rails.root.join("test", "fixtures", "files", "test_image.png"), make_visible: true)
 
     assert_selector "img[src*='test_image.png']"
 
