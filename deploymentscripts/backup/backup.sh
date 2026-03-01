@@ -40,11 +40,13 @@ fi
 SZ="$(wc -c < "$ARCHIVE")"
 [ "$SZ" -gt 0 ] || fail "Backup failed: empty archive"
 
-# If a previous backup exists, new one must not be smaller (heuristic for corruption/missing data)
+# If a previous backup exists, new one must not be significantly smaller (heuristic for corruption/missing data).
+# Allow up to 1% shrink to avoid false positives from minor SQLite/tar variance.
 PREV="$(ls -t "$BACKUP_LOCAL_PATH"/haven-*.tar.gz 2>/dev/null | sed -n '2p')"
 if [ -n "$PREV" ] && [ -f "$PREV" ]; then
     PREVSZ="$(wc -c < "$PREV")"
-    [ "$SZ" -ge "$PREVSZ" ] || fail "Backup corrupt: new backup smaller than previous ($SZ < $PREVSZ)"
+    MIN_OK=$((PREVSZ - PREVSZ / 100))
+    [ "$SZ" -ge "$MIN_OK" ] || fail "Backup corrupt: new backup significantly smaller than previous ($SZ < $PREVSZ, allowed min $MIN_OK)"
 fi
 
 # 3. Upload to Google Drive (optional if rclone not configured)

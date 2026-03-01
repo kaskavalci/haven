@@ -65,7 +65,7 @@ To upload backups to Google Drive, configure rclone inside the backup container 
    - **Option A:** Build a `rclone.conf` that uses the service account (e.g. `rclone config create gdrive drive service_account_file /path/to/key.json`), then mount it into the container at `/root/.config/rclone/rclone.conf`.
    - **Option B:** Mount the JSON key into the container and use rclone environment variables (see [rclone documentation](https://rclone.org/drive/#config-is-in-environment-variables)) to point at the key and set the remote name.
 
-4. Set `RCLONE_REMOTE` and `RCLONE_REMOTE_PATH` in the stack environment (e.g. `gdrive` and `haven_backups`).
+4. Set `RCLONE_REMOTE` and `RCLONE_REMOTE_PATH` in the stack environment (e.g. `gdrive` and `haven_backups`). The path in `RCLONE_REMOTE_PATH` must be an **existing folder** on Google Drive (create it in the Drive UI or via rclone before the first backup).
 
 If `RCLONE_REMOTE` or `RCLONE_REMOTE_PATH` is empty, the backup script skips the upload step; local tarballs are still created and retained.
 
@@ -177,11 +177,34 @@ The `message` field is escaped for JSON. Use a Home Assistant webhook trigger (o
 5. Restore ownership if needed: `chown -R 1000:1000 /mnt/ssd/nfs/docker_data/haven`.
 6. Start the stack again. Haven will use the restored SQLite DB and files.
 
-## 8. Files added by this setup
+## 8. Troubleshooting
+
+### Backup: "Permission denied" writing to `/backups`
+
+The backup container runs as **root**. If the NFS export uses **root_squash** (default), root on the client is mapped to **nobody** on the NFS server, so the export directory must be writable by that user.
+
+**On the NFS server** (e.g. 192.168.0.238), make the backup export writable by `nobody`:
+
+```bash
+sudo chown -R nobody:nogroup /export/alpha/backup/docker
+sudo chmod 775 /export/alpha/backup/docker
+```
+
+If your NFS server uses a different squashed user (e.g. `nfsnobody`), use that user instead of `nobody`. Alternatively, you can export this share with `no_root_squash` so root in the container stays root on the server (less secure; only if you control the NFS server and accept the risk).
+
+### rclone: "Failed to save config" or "device or resource busy"
+
+The rclone config file is mounted **read-write** so rclone can refresh OAuth tokens. Ensure the host path (e.g. `/mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf`) is writable by the user running the container. If you previously had it read-only (`:ro`), remove `:ro` from the volume mount in the stack and redeploy.
+
+### rclone: "directory not found" when listing or uploading
+
+The path in `RCLONE_REMOTE_PATH` (e.g. `haven_backups`) must be an **existing folder** on Google Drive. Create the folder in drive.google.com (in the account or shared drive your remote uses), or create it with rclone from a machine where rclone is configured: `rclone mkdir gdrive:haven_backups`. Then redeploy or re-run the backup.
+
+## 9. Files added by this setup
 
 | Path | Purpose |
 |------|---------|
-| `docker-compose.portainer.yml` | Stack definition (Haven + backup sidecar, bind mount, env). |
+| `docker-compose.portainer.yml` | Stack definition (Haven + backup sidecar, bind mount, NFS volume, env). |
 | `deploymentscripts/backup/Dockerfile` | Backup container image (Alpine, cron, rclone, backup script). |
 | `deploymentscripts/backup/backup.sh` | Script: tar, corruption checks, rclone upload, retention, webhook on failure. |
 | `deploymentscripts/backup/crontab` | Cron schedule (daily 02:00). |

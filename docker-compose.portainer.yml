@@ -34,10 +34,8 @@ services:
       - /mnt/ssd/nfs/docker_data/haven:/data:ro
       # Backup tarballs go to NFS volume (see volumes.haven_backups below)
       - haven_backups:/backups
-      # rclone config (set RCLONE_REMOTE and RCLONE_REMOTE_PATH to enable uploads)
-      - /mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
-      # If your remote uses service_account_file, add and set path in rclone.conf to /root/gdrive-sa.json:
-      # - /mnt/ssd/nfs/docker_data/haven/rclone/gdrive-sa.json:/root/gdrive-sa.json:ro
+      # rclone config dir (mount directory so rclone can rename/write config; must contain rclone.conf)
+      - /mnt/ssd/nfs/docker_data/haven/rclone:/root/.config/rclone
     environment:
       - BACKUP_SOURCE_PATH=/data
       - BACKUP_LOCAL_PATH=/backups
