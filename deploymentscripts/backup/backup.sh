@@ -30,6 +30,8 @@ ARCHIVE="${BACKUP_LOCAL_PATH}/haven-${TIMESTAMP}.tar.gz"
 mkdir -p "$BACKUP_LOCAL_PATH"
 [ -d "$BACKUP_SOURCE_PATH" ] || fail "Backup source directory does not exist: $BACKUP_SOURCE_PATH"
 
+fail "test haven backup"
+
 # 1. Create tarball
 if ! tar czf "$ARCHIVE" -C "$BACKUP_SOURCE_PATH" . ; then
     fail "Backup failed: tar failed"
