@@ -49,11 +49,14 @@ if [ -n "$PREV" ] && [ -f "$PREV" ]; then
     [ "$SZ" -ge "$MIN_OK" ] || fail "Backup corrupt: new backup significantly smaller than previous ($SZ < $PREVSZ, allowed min $MIN_OK)"
 fi
 
-# 3. Upload to Google Drive (optional if rclone not configured)
+# 3. Upload to Google Drive (optional; set RCLONE_REMOTE and RCLONE_REMOTE_PATH in stack env)
 if [ -n "${RCLONE_REMOTE:-}" ] && [ -n "${RCLONE_REMOTE_PATH:-}" ]; then
+    echo "Uploading to ${RCLONE_REMOTE}:${RCLONE_REMOTE_PATH}/ ..." >&2
     if ! rclone copy "$ARCHIVE" "${RCLONE_REMOTE}:${RCLONE_REMOTE_PATH}/" ; then
         fail "Backup failed: rclone upload failed"
     fi
+else
+    echo "Skipping upload: RCLONE_REMOTE or RCLONE_REMOTE_PATH not set" >&2
 fi
 
 # 4. Retention: keep last 7 backups
