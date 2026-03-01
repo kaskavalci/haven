@@ -3,8 +3,7 @@
 # See docs/portainer-sqlite-backup.md for setup, env vars, and restore.
 #
 # Before first deploy:
-#   - Create host dir: /mnt/ssd/nfs/docker_data/haven
-#   - Create backup dir (e.g.): /mnt/ssd/backups/haven (or set BACKUP_LOCAL_PATH to a path you mount)
+#   - Create host dir for Haven data; ensure NFS backup volume is available (192.168.0.238:/export/alpha/backup/docker).
 #   - Set HAVEN_USER_EMAIL, HAVEN_USER_PASS; optionally NOTIFY_WEBHOOK_URL and rclone config.
 
 services:
@@ -33,8 +32,8 @@ services:
     container_name: haven-backup
     volumes:
       - /mnt/ssd/nfs/docker_data/haven:/data:ro
-      # Local backup dir: bind mount (e.g. /mnt/ssd/backups/haven:/backups) or named volume below
-      - ${BACKUP_LOCAL_HOST_PATH:-haven_backups}:/backups
+      # Backup tarballs go to NFS volume (see volumes.haven_backups below)
+      - haven_backups:/backups
       # rclone config (set RCLONE_REMOTE and RCLONE_REMOTE_PATH to enable uploads)
       - /mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
       # If your remote uses service_account_file, add and set path in rclone.conf to /root/gdrive-sa.json:
@@ -50,9 +49,13 @@ services:
       - haven
 
 volumes:
-  # Used only if BACKUP_LOCAL_HOST_PATH is not set (Docker assigns a host path).
-  # To use a fixed host path, set env BACKUP_LOCAL_HOST_PATH=/mnt/ssd/backups/haven and ensure the path exists.
+  # NFS volume for backup tarballs (addr=192.168.0.238, rw,nolock,soft)
   haven_backups:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.0.238,rw,nolock,soft
+      device: ":/export/alpha/backup/docker/haven"
 
 networks:
   public_proxy:

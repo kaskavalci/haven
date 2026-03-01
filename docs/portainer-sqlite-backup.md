@@ -1,6 +1,6 @@
 # Portainer deployment: SQLite, bind mount, and backups
 
-**Date:** 2026-03-01  
+**Date:** 2026-03-01
 **Author:** Cursor
 
 ## Overview
@@ -11,6 +11,7 @@ This setup runs Haven with SQLite (no PostgreSQL), stores data on a host bind mo
 
 - Portainer (or any Docker Compose–capable host)
 - Host path for Haven data: `/mnt/ssd/nfs/docker_data/haven` (or adjust paths in the stack)
+- NFS share for backups: `192.168.0.238:/export/alpha/backup/docker` (must be reachable from the host; options: `rw,nolock,soft`)
 - Optional: Google Cloud service account for Google Drive uploads (rclone)
 - Optional: Home Assistant webhook URL for alerts
 
@@ -48,10 +49,11 @@ Deploy from the repo root so the backup image can be built (context: `deployment
 
 | Variable | Description |
 |----------|-------------|
-| `BACKUP_LOCAL_HOST_PATH` | Host path for backup tarballs (e.g. `/mnt/ssd/backups/haven`). If unset, a Docker named volume `haven_backups` is used. Create the directory if using a bind path. |
 | `NOTIFY_WEBHOOK_URL` | Home Assistant webhook URL. On backup failure or corruption, a JSON payload is POSTed with `title`, `message`, and `source`. Omit to disable notifications. |
 | `RCLONE_REMOTE` | Rclone remote name (e.g. `gdrive`) for Google Drive upload. Leave unset to skip cloud upload. |
 | `RCLONE_REMOTE_PATH` | Path on the remote (e.g. `haven_backups`). Used with `RCLONE_REMOTE`. |
+
+Backup tarballs are always written to the **NFS volume** defined in the stack (`192.168.0.238:/export/alpha/backup/docker`, mounted at `/backups` in the container). No extra env or host path is required.
 
 ## 4. Google Drive (rclone)
 
@@ -114,12 +116,12 @@ If you already have rclone configured on another machine (e.g. with `rclone conf
 
 3. **Mount the config (and key) in the stack**
 
-   In `docker-compose.portainer.yml`, under `haven-backup` → `volumes`, uncomment and adjust the rclone mounts. Example (paths on host under `/mnt/ssd/nfs/docker_data/haven/rclone/`):
+   In `docker-compose.portainer.yml`, under `haven-backup` → `volumes`, uncomment and adjust the rclone mounts if needed. Example (paths on host under `/mnt/ssd/nfs/docker_data/haven/rclone/`):
 
    ```yaml
    volumes:
      - /mnt/ssd/nfs/docker_data/haven:/data:ro
-     - ${BACKUP_LOCAL_HOST_PATH:-haven_backups}:/backups
+     - haven_backups:/backups
      - /mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
      # If your remote uses service_account_file, add (path in the config must be /root/gdrive-sa.json):
      - /mnt/ssd/nfs/docker_data/haven/rclone/gdrive-sa.json:/root/gdrive-sa.json:ro
@@ -145,7 +147,7 @@ If you already have rclone configured on another machine (e.g. with `rclone conf
 
 - **Schedule:** Daily at 02:00 (container time). The backup container runs `crond -f` and executes `backup.sh` via cron.
 - **What is backed up:** The entire Haven data directory (SQLite DB + Active Storage files) as a single tarball: `haven-YYYYMMDD-HHMM.tar.gz`.
-- **Where:** Tarballs are written to `BACKUP_LOCAL_PATH` inside the container (e.g. `/backups`), which is bound to `BACKUP_LOCAL_HOST_PATH` or the `haven_backups` volume. The same file is uploaded to Google Drive if rclone is configured.
+- **Where:** Tarballs are written to `/backups` in the container, which is the NFS volume `192.168.0.238:/export/alpha/backup/docker`. The same file is uploaded to Google Drive if rclone is configured.
 - **Retention:** The last **7** backups are kept locally; older files are deleted after each successful run. Google Drive retention is not applied automatically; you can add a separate cleanup or manage folders manually.
 - **Corruption checks:** Before considering a run successful, the script checks that the new archive exists, has size &gt; 0, and (if a previous backup exists) is not smaller than the previous one. If any check fails, the script does not upload, does not rotate, sends a notification (if `NOTIFY_WEBHOOK_URL` is set), and exits with an error.
 
@@ -168,7 +170,7 @@ The `message` field is escaped for JSON. Use a Home Assistant webhook trigger (o
 1. Stop the Haven stack (and backup container).
 2. Move or rename the current data directory on the host (e.g. `mv /mnt/ssd/nfs/docker_data/haven /mnt/ssd/nfs/docker_data/haven.old`).
 3. Create a new empty directory: `mkdir -p /mnt/ssd/nfs/docker_data/haven`.
-4. Extract the chosen tarball into it:
+4. Extract the chosen tarball into it. Tarballs are on the NFS backup volume (`192.168.0.238:/export/alpha/backup/docker`); use the path where that share is mounted on the host you run the restore from, or copy the file from the NFS server:
    ```bash
    tar xzf /path/to/backups/haven-YYYYMMDD-HHMM.tar.gz -C /mnt/ssd/nfs/docker_data/haven
    ```

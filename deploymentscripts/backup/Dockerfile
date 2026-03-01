@@ -22,4 +22,4 @@ ENV BACKUP_SOURCE_PATH=/data \
 
 WORKDIR /data
 
-CMD ["crond", "-f", "-l", "2"]
+CMD ["crond", "-f"]
