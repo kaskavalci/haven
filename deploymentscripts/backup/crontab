@@ -1,0 +1,2 @@
+# Run Haven backup daily at 02:00 (cron.d: min hour day month dow user cmd)
+0 2 * * * root /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1

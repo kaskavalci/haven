@@ -1,0 +1,61 @@
+# Portainer stack: Haven with SQLite, bind mount, and backup sidecar.
+# Use this when deploying to Portainer with data on host at /mnt/ssd/nfs/docker_data/haven.
+# See docs/portainer-sqlite-backup.md for setup, env vars, and restore.
+#
+# Before first deploy:
+#   - Create host dir: /mnt/ssd/nfs/docker_data/haven
+#   - Create backup dir (e.g.): /mnt/ssd/backups/haven (or set BACKUP_LOCAL_PATH to a path you mount)
+#   - Set HAVEN_USER_EMAIL, HAVEN_USER_PASS; optionally NOTIFY_WEBHOOK_URL and rclone config.
+
+services:
+  haven:
+    image: ghcr.io/kaskavalci/haven:latest
+    container_name: haven
+    ports:
+      - "3000:3000"
+    volumes:
+      - /mnt/ssd/nfs/docker_data/haven/database:/app/storage
+    tmpfs:
+      - /tmp/pids/
+    environment:
+      - PIDFILE=/tmp/pids/server.pid
+      - RAILS_ENV=production
+      - DATABASE_URL=sqlite3:storage/haven_production.sqlite3
+      - HAVEN_USER_EMAIL=${HAVEN_USER_EMAIL:-changeme@havenweb.org}
+      - HAVEN_USER_PASS=${HAVEN_USER_PASS:-ChangeMeN0W}
+    restart: unless-stopped
+    networks:
+      - public_proxy
+      - default
+
+  haven-backup:
+    image: ghcr.io/kaskavalci/haven-backup:latest
+    container_name: haven-backup
+    volumes:
+      - /mnt/ssd/nfs/docker_data/haven:/data:ro
+      # Local backup dir: bind mount (e.g. /mnt/ssd/backups/haven:/backups) or named volume below
+      - ${BACKUP_LOCAL_HOST_PATH:-haven_backups}:/backups
+      # rclone config (set RCLONE_REMOTE and RCLONE_REMOTE_PATH to enable uploads)
+      - /mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      # If your remote uses service_account_file, add and set path in rclone.conf to /root/gdrive-sa.json:
+      # - /mnt/ssd/nfs/docker_data/haven/rclone/gdrive-sa.json:/root/gdrive-sa.json:ro
+    environment:
+      - BACKUP_SOURCE_PATH=/data
+      - BACKUP_LOCAL_PATH=/backups
+      - NOTIFY_WEBHOOK_URL=${NOTIFY_WEBHOOK_URL:-}
+      - RCLONE_REMOTE=${RCLONE_REMOTE:-}
+      - RCLONE_REMOTE_PATH=${RCLONE_REMOTE_PATH:-}
+    restart: unless-stopped
+    depends_on:
+      - haven
+
+volumes:
+  # Used only if BACKUP_LOCAL_HOST_PATH is not set (Docker assigns a host path).
+  # To use a fixed host path, set env BACKUP_LOCAL_HOST_PATH=/mnt/ssd/backups/haven and ensure the path exists.
+  haven_backups:
+
+networks:
+  public_proxy:
+    external: true
+  default:
+    driver: bridge

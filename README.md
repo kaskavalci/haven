@@ -65,6 +65,10 @@ Feel free to use the included `Dockerfile` and `docker-compose.yml`.  You will  
 
 Docker images are published to the [GitHub Container Registry](https://github.com/havenweb/haven/pkgs/container/haven)
 
+### Portainer (SQLite + bind mount + backups)
+
+To run Haven on [Portainer](https://www.portainer.io/) with SQLite, a host bind mount for data, and optional periodic backups (local + Google Drive) with Home Assistant notifications, use `docker-compose.portainer.yml` and see **[Portainer / SQLite backup guide](docs/portainer-sqlite-backup.md)** for setup, environment variables, rclone/Google Drive, and restore steps.
+
 ## Raspberry Pi and Other Linux Systems
 
 I strongly suggest you use to the docker installation method above.
