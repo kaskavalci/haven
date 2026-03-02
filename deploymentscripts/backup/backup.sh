@@ -5,6 +5,25 @@
 
 set -u
 
+# Cron on Alpine often runs jobs with a minimal environment and won't include
+# Compose-provided env vars. When available, import selected variables from PID 1.
+if [ -r /proc/1/environ ]; then
+    _tmp="/tmp/pid1-environ.$$"
+    tr '\0' '\n' < /proc/1/environ > "$_tmp" 2>/dev/null || true
+    while IFS= read -r kv; do
+        case "$kv" in
+            BACKUP_SOURCE_PATH=*|BACKUP_LOCAL_PATH=*|NOTIFY_WEBHOOK_URL=*|RCLONE_REMOTE=*|RCLONE_REMOTE_PATH=*)
+                export "$kv"
+                ;;
+        esac
+    done < "$_tmp"
+    rm -f "$_tmp"
+fi
+
+# Defaults (kept in sync with Dockerfile ENV)
+BACKUP_SOURCE_PATH="${BACKUP_SOURCE_PATH:-/data}"
+BACKUP_LOCAL_PATH="${BACKUP_LOCAL_PATH:-/backups}"
+
 notify() {
     _msg="$1"
     [ -z "${NOTIFY_WEBHOOK_URL:-}" ] && return 0
@@ -20,9 +39,6 @@ fail() {
     echo "$1" >&2
     exit 1
 }
-
-[ -n "${BACKUP_SOURCE_PATH:-}" ] || fail "BACKUP_SOURCE_PATH is not set"
-[ -n "${BACKUP_LOCAL_PATH:-}" ] || fail "BACKUP_LOCAL_PATH is not set"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M)"
 ARCHIVE="${BACKUP_LOCAL_PATH}/haven-${TIMESTAMP}.tar.gz"
