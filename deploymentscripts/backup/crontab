@@ -3,4 +3,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Run Haven backup daily at 02:00 (container local time).
 # Send output to container logs.
-*/5 * * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2
+0 2 * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2
