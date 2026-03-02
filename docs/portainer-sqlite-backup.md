@@ -122,9 +122,8 @@ If you already have rclone configured on another machine (e.g. with `rclone conf
    volumes:
      - /mnt/ssd/nfs/docker_data/haven:/data:ro
      - haven_backups:/backups
-     - /mnt/ssd/nfs/docker_data/haven/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro
-     # If your remote uses service_account_file, add (path in the config must be /root/gdrive-sa.json):
-     - /mnt/ssd/nfs/docker_data/haven/rclone/gdrive-sa.json:/root/gdrive-sa.json:ro
+     # Mount rclone config directory (not a single file) so rclone can rename/write token updates.
+     - /mnt/ssd/nfs/docker_data/haven/rclone:/root/.config/rclone
    ```
 
 4. **Set env vars and redeploy**

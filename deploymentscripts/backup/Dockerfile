@@ -13,8 +13,8 @@ RUN apk add --no-cache \
 COPY backup.sh /usr/local/bin/backup.sh
 RUN chmod +x /usr/local/bin/backup.sh
 
-COPY crontab /etc/cron.d/haven-backup
-RUN chmod 0644 /etc/cron.d/haven-backup
+COPY crontab /etc/crontabs/root
+RUN chmod 0600 /etc/crontabs/root
 
 # Defaults; override via env in compose
 ENV BACKUP_SOURCE_PATH=/data \
