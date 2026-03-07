@@ -32,8 +32,10 @@
   }
 
   function uploadFile(file) {
-    if (!ACCEPTED_TYPES.test(file.type)) {
-      alert("Unsupported file type: " + file.type);
+    var name = (file.name || "").toLowerCase();
+    var isHeic = /\.(heic|heif)$/.test(name);
+    if (!ACCEPTED_TYPES.test(file.type) && !isHeic) {
+      alert("Unsupported file type: " + (file.type || "unknown"));
       return;
     }
 

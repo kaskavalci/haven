@@ -222,6 +222,7 @@ class MicropubController < ApplicationController
     when ".png" then "image/png"
     when ".gif" then "image/gif"
     when ".webp" then "image/webp"
+    when ".heic", ".heif" then "image/heic"
     else "application/octet-stream"
     end
 

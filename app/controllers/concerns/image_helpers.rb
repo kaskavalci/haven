@@ -1,6 +1,9 @@
 module ImageHelpers
   extend ActiveSupport::Concern
 
+  HEIF_CONTENT_TYPES = /\b(heic|heif)\b/i
+  HEIF_EXTENSIONS = [".heic", ".heif"].freeze
+
   def haven_image_path(image)
     "/images/raw/#{image.id}/#{image.blob.filename}"
   end
@@ -9,9 +12,28 @@ module ImageHelpers
     "/images/resized/#{image.id}/#{image.blob.filename}"
   end
 
-  def create_haven_image(file)
-    image = Image.new
-    image.blob.attach(file)
+  def create_haven_image(file = nil, io: nil, filename: nil, content_type: nil)
+    if file
+      io = file.respond_to?(:tempfile) ? file.tempfile : file
+      filename = file.original_filename
+      content_type = file.content_type
+    end
+
+    if heif?(content_type, filename)
+      jpg_io = convert_heif_to_jpg(io)
+      jpg_io.rewind
+      filename = "#{File.basename(filename, '.*')}.jpg"
+      content_type = "image/jpeg"
+      image = Image.new
+      image.blob.attach(io: jpg_io, filename: filename, content_type: content_type)
+    else
+      image = Image.new
+      if file
+        image.blob.attach(file)
+      else
+        image.blob.attach(io: io, filename: filename, content_type: content_type)
+      end
+    end
     image.save!
     image
   end
@@ -41,5 +63,18 @@ module ImageHelpers
     when "mp4", "mov", "hevc" then "video"
     else "image"
     end
+  end
+
+  private
+
+  def heif?(content_type, filename)
+    return true if content_type.to_s.match?(HEIF_CONTENT_TYPES)
+    HEIF_EXTENSIONS.include?(File.extname(filename.to_s).downcase)
+  end
+
+  def convert_heif_to_jpg(io)
+    path = io.respond_to?(:tempfile) ? io.tempfile.path : io.path
+    io.rewind if io.respond_to?(:rewind)
+    ImageProcessing::MiniMagick.source(path).convert("jpg").call
   end
 end

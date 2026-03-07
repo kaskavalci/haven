@@ -9,7 +9,7 @@ RUN apt-get update -yqq && \
         autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev \
         zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev libreadline-dev \
         git libgdbm6 nodejs dirmngr gnupg apt-transport-https ca-certificates npm \
-        libpq-dev libsqlite3-dev pkg-config imagemagick && \
+        libpq-dev libsqlite3-dev pkg-config imagemagick libheif1 && \
     npm install --global yarn && \
     gem update --system && \
     gem update strscan --default && \
@@ -36,7 +36,7 @@ WORKDIR /app
 # Runtime-only deps: pg gem needs libpq5, cron for feeds, imagemagick for image_processing
 RUN apt-get update -yqq && \
     apt-get install -yqq --no-install-recommends \
-        ca-certificates libpq5 cron imagemagick && \
+        ca-certificates libpq5 cron imagemagick libheif1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV MALLOC_ARENA_MAX='2'

@@ -31,7 +31,7 @@ jobs:
 
     - name: Install ImageMagick
       run: |
-        sudo apt-get install -y imagemagick
+        sudo apt-get install -y imagemagick libheif1
 
     - name: Setup chrome driver (for Selenium)
       uses: nanasess/setup-chromedriver@v2

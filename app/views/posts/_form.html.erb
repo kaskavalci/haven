@@ -9,12 +9,12 @@
   </div>
 
   <noscript>
-    <%= form.file_field :pic, :accept => "image/*,.mp4,.mov,.hevc,.mp3", :style => "display:inline;" %>
+    <%= form.file_field :pic, :accept => "image/*,.heic,.heif,.mp4,.mov,.hevc,.mp3", :style => "display:inline;" %>
     <%= form.submit :value => "Upload Selected Image", data: {disable_with: "Upload Selected Image"}, :style => "display:inline;" %>
   </noscript>
 
   <div class="upload-controls">
-    <input type="file" id="upload-file-input" accept="image/*,.mp4,.mov,.hevc,.mp3" multiple style="display:none;">
+    <input type="file" id="upload-file-input" accept="image/*,.heic,.heif,.mp4,.mov,.hevc,.mp3" multiple style="display:none;">
     <button type="button" id="upload-btn" class="upload-btn">
       &#128247; Add Photo
     </button>

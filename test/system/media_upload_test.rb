@@ -64,4 +64,27 @@ class MediaUploadTest < ApplicationSystemTestCase
     assert_selector "video source[src*='test_video.mov']", visible: :all
     click_on "Logout"
   end
+
+  test "upload heic converts to jpg and validate display" do
+    heic_path = Rails.root.join("test", "fixtures", "files", "test_heic.heic")
+    skip "HEIC fixture missing. Add test/fixtures/files/test_heic.heic to run (e.g. export from iPhone or use a sample HEIC)." unless File.exist?(heic_path)
+
+    admin_user = { email: "george@washington.com", pass: "georgepass" }
+
+    log_in_with admin_user
+    click_on "New Post Button"
+
+    fill_in "post_content", with: "This is a test post with a HEIC image."
+
+    assert_no_selector "img[src*='.jpg']"
+    attach_file("upload-file-input", heic_path, make_visible: true)
+
+    # Server converts HEIC to JPG, so the inserted image references a .jpg URL
+    assert_selector "img[src*='.jpg']"
+
+    click_on "Save Post"
+
+    assert_selector "img[src*='.jpg']"
+    click_on "Logout"
+  end
 end
