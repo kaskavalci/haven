@@ -72,14 +72,27 @@ function discardDraft() {
   document.getElementById("draft-status").innerHTML = "";
 }
 
+function showDraftRestoredStatus() {
+  var statusEl = document.getElementById("draft-status");
+  statusEl.textContent = "Draft restored. ";
+  var discardLink = document.createElement("a");
+  discardLink.id = "discard-draft-link";
+  discardLink.href = "#";
+  discardLink.textContent = "Discard";
+  discardLink.addEventListener("click", function(event) {
+    event.preventDefault();
+    discardDraft();
+  });
+  statusEl.appendChild(discardLink);
+}
+
 function restoreDraft() {
   try {
     var draft = localStorage.getItem(draftKey);
     if (draft !== null && draft !== serverContent) {
       document.getElementById("post_content").value = draft;
       doRender();
-      document.getElementById("draft-status").innerHTML =
-        'Draft restored. <a href="#" onclick="discardDraft(); return false;">Discard</a>';
+      showDraftRestoredStatus();
     }
   } catch(e) {}
 }

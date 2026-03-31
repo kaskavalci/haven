@@ -94,7 +94,7 @@ class DraftPersistenceTest < ApplicationSystemTestCase
     assert_equal draft_content, find_field("post_content").value
     assert_text "Draft restored"
 
-    click_on "Discard"
+    click_link "Discard"
 
     assert_equal "", find_field("post_content").value
     stored = page.evaluate_script("localStorage.getItem('haven_draft_new')")
