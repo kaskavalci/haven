@@ -1,5 +1,5 @@
 <hr>
-<%= form_with model: @post, local: true do |form| %>
+<%= form_with model: @post, local: true, id: 'post-form' do |form| %>
   <%= form.date_field :date, :style => 'display:inline;', :value => @post.datetime.strftime("%Y-%m-%d"), type: (@show_date ? :date : :hidden) %>
   <%= form.time_field :time, :style => 'display:inline;', :value => @post.datetime.strftime("%H:%M"), type: (@show_date ? :time : :hidden) %>
 
@@ -25,6 +25,7 @@
   </div>
 
   <%= form.submit :value => "Save Post", :style => "display:block;" %>
+  <span id="draft-status" style="font-size:0.85em; color:#888;"></span>
 <% end %>
 
 <%= link_to "Markdown", "/markdown", target: "_blank" %> Preview:
@@ -36,6 +37,10 @@
 
 <%= javascript_tag nonce: true, type: 'application/javascript' do %>
 
+var draftKey = "<%= @post.persisted? ? "haven_draft_#{@post.id}" : 'haven_draft_new' %>";
+var serverContent = document.getElementById("post_content").value;
+var _draftTimer = null;
+
 function doRender() {
   var converter = new showdown.Converter();
   converter.setFlavor('github');
@@ -43,6 +48,45 @@ function doRender() {
   var html      = converter.makeHtml(text);
   document.getElementById("display").innerHTML = html;
 }
+
+function saveDraft() {
+  clearTimeout(_draftTimer);
+  _draftTimer = setTimeout(function() {
+    try {
+      localStorage.setItem(draftKey, document.getElementById("post_content").value);
+      var el = document.getElementById("draft-status");
+      el.textContent = "Draft saved";
+      setTimeout(function() { if (el.textContent === "Draft saved") el.textContent = ""; }, 2000);
+    } catch(e) {}
+  }, 500);
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(draftKey); } catch(e) {}
+}
+
+function discardDraft() {
+  clearDraft();
+  document.getElementById("post_content").value = serverContent;
+  doRender();
+  document.getElementById("draft-status").innerHTML = "";
+}
+
+function restoreDraft() {
+  try {
+    var draft = localStorage.getItem(draftKey);
+    if (draft !== null && draft !== serverContent) {
+      document.getElementById("post_content").value = draft;
+      doRender();
+      document.getElementById("draft-status").innerHTML =
+        'Draft restored. <a href="#" onclick="discardDraft(); return false;">Discard</a>';
+    }
+  } catch(e) {}
+}
+
+document.getElementById("post_content").addEventListener("input", saveDraft);
+document.getElementById("post-form").addEventListener("submit", clearDraft);
+restoreDraft();
 doRender();
 
 function setTime() {
