@@ -30,7 +30,7 @@ gem 'bcrypt', '~> 3.1.16'
 gem 'kaminari', '~> 1.2.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '~> 7.1.5.2'
+gem 'rails', '~> 7.2.3.1'
 # Database adapters (install one or both; exclude the other with bundle config)
 gem 'pg', '~> 1.5.9', group: :postgresql
 gem 'sqlite3', '~> 1.7', group: :sqlite
