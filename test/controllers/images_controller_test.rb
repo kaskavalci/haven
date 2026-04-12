@@ -45,6 +45,28 @@ class ImagesControllerTest < ActionDispatch::IntegrationTest
     $heic_convert_stub = nil
   end
 
+  test "upload animated gif returns image markdown" do
+    skip "ImageMagick convert not available" unless convert_available?
+
+    sign_in_as_washington
+
+    gif = generate_two_frame_gif
+    file = Rack::Test::UploadedFile.new(
+      StringIO.new(gif),
+      "image/gif",
+      original_filename: "anim.gif"
+    )
+
+    post upload_image_path, params: { file: file }, headers: csrf_headers.merge("Accept" => "application/json")
+    assert_response :created
+    json = JSON.parse(response.body)
+    assert_includes json["tag"], "![photo]"
+    assert_equal "image", json["type"]
+
+    image = Image.order(created_at: :desc).first
+    assert_equal "image/gif", image.blob.content_type
+  end
+
   def assert_heic_upload_response
     assert_response :created
     json = JSON.parse(response.body)
@@ -57,6 +79,26 @@ class ImagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def convert_available?
+    system("which convert", out: File::NULL, err: File::NULL)
+  end
+
+  def generate_two_frame_gif
+    require "mini_magick"
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "out.gif")
+      MiniMagick::Tool::Convert.new do |c|
+        c.delay "10"
+        c << "-size" << "10x10"
+        c << "xc:red"
+        c << "xc:blue"
+        c.loop("0")
+        c << path
+      end
+      File.binread(path)
+    end
+  end
 
   def sign_in_as_washington
     post user_session_path, params: {

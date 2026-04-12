@@ -47,7 +47,7 @@ module ImageHelpers
     when "mp4", "mov", "hevc"
       "\n\n<video controls><source src=\"#{haven_image_path(image)}\" type=\"video/mp4\"></video>"
     else
-      image_meta = ActiveStorage::Analyzer::ImageAnalyzer::ImageMagick.new(image.blob).metadata
+      image_meta = image_metadata_for_blob(image.blob)
       if image_meta[:width] && image_meta[:width] > 1600
         "\n\n[![photo](#{haven_image_resized_path(image)})](#{haven_image_path(image)})"
       else
@@ -66,6 +66,12 @@ module ImageHelpers
   end
 
   private
+
+  def image_metadata_for_blob(blob)
+    analyzer_class = ActiveStorage.analyzers.detect { |klass| klass.accept?(blob) } ||
+      ActiveStorage::Analyzer::NullAnalyzer
+    analyzer_class.new(blob).metadata
+  end
 
   def heif?(content_type, filename)
     return true if content_type.to_s.match?(HEIF_CONTENT_TYPES)
